@@ -2,12 +2,22 @@ package com.example.demo
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import com.example.demo.DeviceManager.RequestTrackDevice
-
+import scala.concurrent.duration._
+// 设备组
 object DeviceGroup {
 def props(groupId:String):Props=Props(new DeviceGroup((groupId)))
 
-  final case class RequstDeviceList(requestId:Long)
+  final case class RequestDeviceList(requestId:Long)
   final case class ReplyDeviceList(requestId:Long,ids:Set[String])
+
+  final case class RequestAllTemperatures(requestId:Long)
+  final case class RespondAllTemperatures(requestId:Long,temperatures:Map[String,TemperatureReading])
+
+  sealed trait TemperatureReading
+  final case class Temperature(value:Double) extends TemperatureReading
+  final case object TemperatureNotAvailable extends TemperatureReading
+  final case object DeviceNotAvailable extends TemperatureReading
+  final case object DeviceTimedOut extends TemperatureReading
 }
 
 class DeviceGroup(groupId:String) extends  Actor with ActorLogging{
@@ -35,7 +45,7 @@ class DeviceGroup(groupId:String) extends  Actor with ActorLogging{
     case RequestTrackDevice(groupId,deviceId)=>
       log.warning(" ignoring TrackDevice request for {} . this is responseible for {}",groupId,this.groupId)
 
-    case RequstDeviceList(requestId) =>
+    case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId,deviceToActor.keySet)
 
     case Terminated(deviceActor)=>
@@ -44,6 +54,16 @@ class DeviceGroup(groupId:String) extends  Actor with ActorLogging{
       actorToDeviceId -=deviceActor
       deviceToActor -=deviceId
 
+      //查询
+    case RequestAllTemperatures(requestId) ⇒
+      context.actorOf(DeviceGroupQuery.props(
+        actorToDeviceId = actorToDeviceId,
+        requestId = requestId,
+        requester = sender(),
+        3.seconds
+      ))
   }
+
+
 }
 

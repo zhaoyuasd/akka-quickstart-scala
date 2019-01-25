@@ -6,10 +6,10 @@ object Device {
  def props(groupId:String,deviceId:String):Props=Props(new Device(groupId,deviceId))
 
   final case class ReadTemperature(resquestId:Long)  //温度读取
-  final case class RespondTemperature(resqustId:Long,value:Option[Double]) //温度响应
+  final case class RespondTemperature(resquestId:Long,value:Option[Double]) //温度响应
 
-  final case class RecordTemperature(requestId:Long,value:Double)
-  final case class TemperatureRecorded(requestId:Long)
+  final case class RecordTemperature(resquestId:Long,value:Double)
+  final case class TemperatureRecorded(resquestId:Long)
 }
 
 class Device(groupId:String,deviceId:String) extends Actor with ActorLogging{
